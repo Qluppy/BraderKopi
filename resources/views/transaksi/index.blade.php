@@ -22,10 +22,6 @@
                 <div class="card-body">
                     <form action="{{ route('transaksi.store') }}" method="POST" id="transaksiForm">
                         @csrf
-                        <div class="mb-3">
-                            <label for="nama_pembeli" class="form-label">Nama Pembeli</label>
-                            <input type="text" class="form-control" id="nama_pembeli" name="nama_pembeli" required>
-                        </div>
 
                         <div class="mb-3">
                             <label for="produk" class="form-label">Pilih Produk</label>
@@ -43,6 +39,12 @@
                                 min="1" required>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="nama_pembeli" class="form-label">Nama Pembeli</label>
+                            <input type="text" class="form-control" id="nama_pembeli" name="nama_pembeli" required>
+                        </div>
+
+                  
                         <h4>Total Harga: <span id="total_harga">0</span></h4>
 
                         <div class="mb-3">

@@ -67,6 +67,12 @@
                                 <p>Laporan Penjualan</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{{ route('akun.index') }}" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>Kelola Akun</p>
+                            </a>
+                        </li>
                     </ul>
                 </nav>
             </div>

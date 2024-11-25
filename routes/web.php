@@ -23,10 +23,27 @@ Route::get('/home', function () {
 
 
 // Route untuk halaman login
+// Rute autentikasi
+Route::get('/login', function () {
+    return view('login');
+})->name('login');
 
+Route::get('/registrasi', function () {
+    return view('registrasi');
+})->name('registrasi');
+
+
+Route::post('/registrasi', [AkunController::class, 'registrasi'])->name('registrasi.submit');
+
+Route::post('/login', [AkunController::class, 'login']);
+Route::get('/logout', [AkunController::class, 'logout']);
+Route::post('/logout', [AkunController::class, 'logout'])->name('logout');
 
 // Route untuk dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+});
 
 // Route untuk halaman stok
 Route::get('/stok', [StokController::class, 'index'])->name('stok.index');
@@ -70,9 +87,11 @@ Route::get('/notifikasi-stok', function () {
     return view('notifikasi_stok');
 })->name('notifikasi.stok');
 
+// kelola akun
+Route::middleware(['auth'])->group(function () {
+    Route::get('/akun', [AkunController::class, 'index'])->name('akun.index'); // Daftar akun
+    Route::get('/akun/{id}/edit', [AkunController::class, 'edit'])->name('akun.edit'); // Edit akun
+    Route::put('/akun/{id}', [AkunController::class, 'update'])->name('akun.update'); // Update akun
+    Route::delete('/akun/{id}', [AkunController::class, 'destroy'])->name('akun.destroy'); // Hapus akun   
+});
 
-Route::post('/register', [UserController::class,'register']);
-
-Route::post('/logout', [UserController::class, 'logout']);
-
-Route::post('/login', [UserController::class, 'login']);

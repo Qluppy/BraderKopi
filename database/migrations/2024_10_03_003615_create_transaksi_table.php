@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('transaksi', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('idakun')->nullable()->constrained('akun')->onDelete('cascade');
+            $table->foreignId('akun')->nullable()->constrained('users')->onDelete('cascade'); 
             $table->decimal('total_harga', 8, 2);
             $table->string('nama_pembeli');
             $table->timestamp('tanggal_transaksi')->useCurrent();
