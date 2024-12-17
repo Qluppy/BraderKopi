@@ -49,7 +49,13 @@ Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produ
 
 // Route untuk halaman transaksi
 Route::get('/transaksi', [TransaksiController::class, 'index'])->name('transaksi.index');
-Route::post('/transaksi', [TransaksiController::class, 'store'])->name('transaksi.store');
+Route::get('/transaksi/cari-produk', [TransaksiController::class, 'cariProduk'])->name('transaksi.cari-produk');
+Route::post('/keranjang/tambah/{id}', [TransaksiController::class, 'tambahKeKeranjang'])->name('keranjang.tambah');
+Route::put('/keranjang/update/{produk_id}', [TransaksiController::class, 'updateKeranjang'])->name('keranjang.update');
+Route::delete('/keranjang/hapus/{produk_id}', [TransaksiController::class, 'hapusDariKeranjang'])->name('keranjang.hapus');
+Route::post('/transaksi/store', [TransaksiController::class, 'store'])->name('transaksi.store');
+Route::get('/transaksi/{id}', [TransaksiController::class, 'show'])->name('transaksi.show');
+Route::delete('/transaksi/{id}', [TransaksiController::class, 'destroy'])->name('transaksi.destroy');
 
 // Route untuk halaman riwayat transaksi
 Route::get('/riwayat-transaksi', [TransaksiController::class, 'riwayat'])->name('transaksi.riwayat');

@@ -208,6 +208,10 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label for="jumlah_stok" class="form-label">Jumlah Stok</label>
+                        <input type="number" name="jumlah_stok" id="jumlah_stok" class="form-control" min="1" required>
+                    </div>
+                    <div class="mb-3">
                         <label for="deskripsi_bahan" class="form-label">Deskripsi</label>
                         <textarea name="deskripsi_bahan" id="deskripsi_bahan" class="form-control" required></textarea>
                     </div>
