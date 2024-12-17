@@ -2,64 +2,68 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Models\Transaksi;
+use Spatie\Dropbox\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\DropboxTokenProvider;
 use App\Exports\LaporanPenjualanExport;
+use Illuminate\Support\Facades\Storage;
 
 class LaporanController extends Controller
 {
-    // Menampilkan halaman laporan dengan grafik dan detail penjualan
     public function index(Request $request)
     {
-        $periode = $request->get('periode', 'harian'); // Default 'harian'
-        $tanggalSekarang = Carbon::now();
-        $penjualans = [];
+        // Filter berdasarkan periode
+        $startDate = $request->query('start_date', now()->startOfMonth()->toDateString());
+        $endDate = $request->query('end_date', now()->endOfMonth()->toDateString());
 
-        if ($periode == 'harian') {
-            $penjualans = Transaksi::whereDate('created_at', $tanggalSekarang->format('Y-m-d'))->get();
-        } elseif ($periode == 'bulanan') {
-            $penjualans = Transaksi::whereMonth('created_at', $tanggalSekarang->format('m'))
-                                    ->whereYear('created_at', $tanggalSekarang->format('Y'))
-                                    ->get();
-        } elseif ($periode == 'tahunan') {
-            $penjualans = Transaksi::whereYear('created_at', $tanggalSekarang->format('Y'))->get();
-        }
+        // Ambil data rekapitulasi per produk
+        $rekapProduk = DB::table('detailtransaksi')
+            ->join('transaksi', 'detailtransaksi.transaksi_id', '=', 'transaksi.id')
+            ->join('produk', 'detailtransaksi.produk_id', '=', 'produk.id')
+            ->select(
+                'detailtransaksi.produk_id',
+                'produk.nama_produk',
+                DB::raw('SUM(detailtransaksi.jumlah) AS total_terjual'),
+                DB::raw('SUM(detailtransaksi.jumlah * produk.harga_produk) AS total_pendapatan')
+            )
+            ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
+            ->groupBy('detailtransaksi.produk_id', 'produk.nama_produk')
+            ->orderByDesc('total_terjual')
+            ->get();
 
-        $label = [];
-        $data = [];
+        // Total Penjualan Seluruhnya
+        $totalPenjualan = $rekapProduk->sum('total_pendapatan');
 
-        foreach ($penjualans as $penjualan) {
-            $label[] = $penjualan->created_at->format('d-m-Y');
-            $data[] = $penjualan->total_harga;
-        }
-
-        return view('laporan.index', [
-            'penjualans' => $penjualans,
-            'label' => $label,
-            'data' => $data
-        ]);
+        return view('laporan.index', compact('rekapProduk', 'totalPenjualan', 'startDate', 'endDate'));
     }
 
-    // Export laporan dalam format Excel
     public function export(Request $request)
     {
-        // Dapatkan data penjualan berdasarkan periode
-        $periode = $request->get('periode', 'harian');
-        $tanggalSekarang = Carbon::now();
+        // Filter periode
+        $startDate = $request->query('start_date', now()->startOfMonth()->toDateString());
+        $endDate = $request->query('end_date', now()->endOfMonth()->toDateString());
 
-        if ($periode == 'harian') {
-            $penjualans = Transaksi::whereDate('created_at', $tanggalSekarang->format('Y-m-d'))->get();
-        } elseif ($periode == 'bulanan') {
-            $penjualans = Transaksi::whereMonth('created_at', $tanggalSekarang->format('m'))
-                                    ->whereYear('created_at', $tanggalSekarang->format('Y'))
-                                    ->get();
-        } elseif ($periode == 'tahunan') {
-            $penjualans = Transaksi::whereYear('created_at', $tanggalSekarang->format('Y'))->get();
-        }
+        // Ambil data rekapitulasi per produk
+        $rekapProduk = DB::table('detailtransaksi')
+            ->join('transaksi', 'detailtransaksi.transaksi_id', '=', 'transaksi.id')
+            ->join('produk', 'detailtransaksi.produk_id', '=', 'produk.id')
+            ->select(
+                'transaksi.tanggal_transaksi',
+                'produk.nama_produk',
+                DB::raw('SUM(detailtransaksi.jumlah) AS total_terjual'),
+                DB::raw('SUM(transaksi.total_harga) AS total_pendapatan')
+            )
+            ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
+            ->groupBy('transaksi.tanggal_transaksi', 'produk.nama_produk')
+            ->orderByDesc('total_terjual')
+            ->get();
 
-        // Export data ke Excel
-        return Excel::download(new LaporanPenjualanExport($penjualans), 'laporan_penjualan.xlsx');
+        // Nama file export
+        $fileName = 'laporan_penjualan_' . $startDate . '_to_' . $endDate . '.xlsx';
+
+        // Export menggunakan LaporanPenjualanExport
+        return Excel::download(new LaporanPenjualanExport($rekapProduk), $fileName);
     }
 }

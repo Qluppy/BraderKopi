@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Produk;
 use App\Models\Transaksi;
 use App\Models\MasterBahan;
+use App\Models\Stok;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -23,7 +24,7 @@ class DashboardController extends Controller
                             ->get();
 
         // Menampilkan bahan yang stoknya menipis
-        $stokMenipis = MasterBahan::where('jumlah_stok', '<=', 10)->get();
+        $stokMenipis = Stok::where('jumlah_stok', '<=', 10)->get();
 
         // Return view dengan data
         return view('dashboard.index', compact('totalProduk', 'totalBahan', 'transaksiHariIni', 'produkTerlaris', 'stokMenipis'));

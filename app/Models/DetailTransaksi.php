@@ -8,25 +8,27 @@ use Illuminate\Database\Eloquent\Model;
 class DetailTransaksi extends Model
 {
     use HasFactory;
-    
-    use HasFactory;
-    
-    protected $table = 'detailtransaksi'; // Nama tabel
 
+    // Tentukan nama tabel jika tidak sesuai dengan nama default (laravel akan menganggap tabel bernama 'detailtransaksis')
+    protected $table = 'detailtransaksi';
+
+    // Tentukan atribut yang dapat diisi secara mass-assignment
     protected $fillable = [
-        'idtransaksi',
-        'idproduk',
-        'harga_saat_pesan',
+        'transaksi_id',
+        'produk_id',
+        'harga',
         'jumlah',
     ];
 
+    // Relasi dengan transaksi (setiap detail transaksi berhubungan dengan satu transaksi)
     public function transaksi()
     {
-        return $this->belongsTo(Transaksi::class, 'idtransaksi');
+        return $this->belongsTo(Transaksi::class);
     }
 
+    // Relasi dengan produk (setiap detail transaksi berhubungan dengan satu produk)
     public function produk()
     {
-        return $this->belongsTo(Produk::class, 'idproduk');
+        return $this->belongsTo(Produk::class);
     }
 }

@@ -13,11 +13,10 @@ return new class extends Migration
     {
         Schema::create('transaksi', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('akun')->nullable()->constrained('users')->onDelete('cascade'); 
-            $table->decimal('total_harga', 8, 2);
             $table->string('nama_pembeli');
-            $table->timestamp('tanggal_transaksi')->useCurrent();
-            $table->enum('metode_pembayaran', ['cash', 'QR code']);
+            $table->decimal('total_harga', 10, 2);
+            $table->date('tanggal_transaksi');
+            $table->enum('metode_pembayaran', ['cash', 'qr_code'])->default('cash'); // Menambahkan kolom metode_pembayaran
             $table->timestamps();
         });
     }

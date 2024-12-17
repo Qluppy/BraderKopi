@@ -71,6 +71,9 @@
                 </div>
 
                 <button type="submit" class="btn btn-success w-100">Login</button>
+                <div class="text-center mt-3">
+                    <p>Belum punya akun? <a href="/registrasi">Daftar di sini</a></p>
+                </div>
             </form>
         </div>
     </div>

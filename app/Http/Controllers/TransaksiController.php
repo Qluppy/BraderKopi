@@ -8,76 +8,167 @@ use App\Models\Transaksi;
 use App\Models\ProdukBahan;
 use Illuminate\Http\Request;
 use App\Models\DetailTransaksi;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class TransaksiController extends Controller
 {
     public function index()
     {
-        // Ambil semua produk untuk halaman transaksi
-        $produks = Produk::with('bahan')->get(); // Memuat relasi bahan
-        return view('transaksi.index', compact('produks'));
+        $transaksi = Transaksi::with('detailTransaksi.produk')->get();
+        $produk = Produk::all();
+        $keranjang = session()->get('keranjang', []);
+
+        return view('transaksi.index', compact('transaksi', 'produk', 'keranjang'));
+    }
+
+    public function cariProduk(Request $request)
+    {
+        // Ambil kata kunci pencarian dari request
+        $query = $request->input('query');
+
+        // Cari produk berdasarkan nama yang sesuai dengan query
+        $produk = Produk::where('nama_produk', 'LIKE', "%$query%")
+            ->get(['id', 'nama_produk', 'harga_produk', 'gambar_produk']);
+
+        // Kembalikan data produk dalam bentuk JSON
+        return response()->json($produk);
+    }
+
+    public function tambahKeKeranjang(Request $request, $id)
+    {
+        $produk = Produk::find($id);
+        $jumlah = $request->jumlah;
+
+        if (!$produk) {
+            return redirect()->route('transaksi.index')->with('error', 'Produk tidak ditemukan');
+        }
+
+        $keranjang = session()->get('keranjang', []);
+
+        if (isset($keranjang[$id])) {
+            $keranjang[$id]['jumlah'] += $jumlah;
+        } else {
+            $keranjang[$id] = [
+                'id' => $produk->id,
+                'nama_produk' => $produk->nama_produk,
+                'harga_produk' => $produk->harga_produk,
+                'gambar_produk' => $produk->gambar_produk,
+                'jumlah' => $jumlah,
+            ];
+        }
+
+        session()->put('keranjang', $keranjang);
+        return redirect()->route('transaksi.index')->with('success', 'Produk ditambahkan ke keranjang');
+    }
+
+    public function updateKeranjang($key)
+    {
+        $keranjang = session()->get('keranjang', []);
+
+        if (isset($keranjang[$key])) {
+            $jumlah = request()->input('jumlah');
+            if ($jumlah > 0) {
+                $keranjang[$key]['jumlah'] = $jumlah;
+                session()->put('keranjang', $keranjang);
+                return redirect()->route('transaksi.index')->with('success', 'Jumlah produk berhasil diperbarui.');
+            } else {
+                return redirect()->route('transaksi.index')->with('error', 'Jumlah produk harus lebih dari 0.');
+            }
+        }
+
+        return redirect()->route('transaksi.index')->with('error', 'Produk tidak ditemukan dalam keranjang.');
+    }
+
+    public function hapusDariKeranjang($id)
+    {
+        $keranjang = session()->get('keranjang', []);
+
+        if (isset($keranjang[$id])) {
+            unset($keranjang[$id]);
+            session()->put('keranjang', $keranjang);
+            return redirect()->route('transaksi.index')->with('success', 'Produk berhasil dihapus dari keranjang');
+        }
+
+        return redirect()->route('transaksi.index')->with('error', 'Produk tidak ditemukan di keranjang');
     }
 
     public function store(Request $request)
     {
-        // Validasi input
+        Log::info($request->all());
+
         $request->validate([
             'nama_pembeli' => 'required|string',
-            'produk_id' => 'required|array', 
-            'jumlah' => 'required|array',
-            'metode_pembayaran' => 'required|string',
         ]);
 
-        $produkIds = $request->input('produk_id');
-        $jumlahs = $request->input('jumlah');
-        $totalHarga = 0;
+        $keranjang = session()->get('keranjang', []);
+        if (empty($keranjang)) {
+            return redirect()->route('transaksi.index')->with('error', 'Keranjang kosong, silakan pilih produk');
+        }
 
-        // Cek stok dan hitung total harga
-        foreach ($produkIds as $index => $produkId) {
-            $produk = Produk::with('bahan')->find($produkId);
-            $jumlah = $jumlahs[$index];
+        $totalHarga = 0;
+        $stokUpdate = [];
+
+        foreach ($keranjang as $item) {
+            $produk = Produk::find($item['id']);
+            $jumlah = $item['jumlah'];
+
+            $totalHarga += $produk->harga_produk * $jumlah;
 
             foreach ($produk->bahan as $bahan) {
                 $stok = Stok::where('idbahan', $bahan->id)->first();
 
                 if (!$stok || $stok->jumlah_stok < $bahan->pivot->jumlah_bahan * $jumlah) {
                     return redirect()->route('notifikasi.stok')->with(
-                        'error', 
+                        'error',
                         'Stok bahan untuk "' . $bahan->nama_bahan . '" tidak mencukupi.'
                     );
                 }
+
+                $stokUpdate[$bahan->id] = isset($stokUpdate[$bahan->id])
+                    ? $stokUpdate[$bahan->id] + ($bahan->pivot->jumlah_bahan * $jumlah)
+                    : $bahan->pivot->jumlah_bahan * $jumlah;
             }
+        }
 
-            $totalHarga += $produk->harga_produk * $jumlah;
-
-            // Kurangi stok bahan
-            foreach ($produk->bahan as $bahan) {
-                $stok = Stok::where('idbahan', $bahan->id)->first();
-                $stok->jumlah_stok -= $bahan->pivot->jumlah_bahan * $jumlah;
+        foreach ($stokUpdate as $bahanId => $jumlahDipakai) {
+            $stok = Stok::find($bahanId);
+            if ($stok) {
+                $stok->jumlah_stok -= $jumlahDipakai;
                 $stok->save();
             }
         }
 
-        // Simpan transaksi
-        $transaksi = new Transaksi();
-        $transaksi->nama_pembeli = $request->input('nama_pembeli');
-        $transaksi->total_harga = $totalHarga;
-        $transaksi->metode_pembayaran = $request->input('metode_pembayaran');
-        $transaksi->akun = Auth::id(); // ID pengguna yang login
-        $transaksi->save();
+        $transaksi = Transaksi::create([
+            'nama_pembeli' => $request->nama_pembeli,
+            'total_harga' => $totalHarga,
+            'tanggal_transaksi' => now(),
+        ]);
 
-        // Simpan detail transaksi
-        foreach ($produkIds as $index => $produkId) {
-            $jumlah = $jumlahs[$index];
-            $detailTransaksi = new DetailTransaksi();
-            $detailTransaksi->idtransaksi = $transaksi->id;
-            $detailTransaksi->idproduk = $produkId;
-            $detailTransaksi->jumlah_produk = $jumlah;
-            $detailTransaksi->harga_produk = Produk::find($produkId)->harga_produk;
-            $detailTransaksi->save();
+        foreach ($keranjang as $item) {
+            $produk = Produk::find($item['id']);
+            $jumlah = $item['jumlah'];
+
+            DetailTransaksi::create([
+                'transaksi_id' => $transaksi->id,
+                'produk_id' => $produk->id,
+                'harga' => $produk->harga_produk,
+                'jumlah' => $jumlah,
+            ]);
         }
 
-        return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil!');
+        session()->forget('keranjang');
+
+        return redirect()->route('transaksi.index');
+    }
+
+    public function cancel($id)
+    {
+        $transaksi = Transaksi::findOrFail($id);
+
+        $transaksi->update([
+            'status' => 'dibatalkan',
+        ]);
+
+        return redirect()->route('transaksi.index')->with('success', 'Transaksi telah dibatalkan');
     }
 }

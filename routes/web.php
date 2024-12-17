@@ -3,15 +3,16 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AkunController;
 use App\Http\Controllers\StokController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\DropboxController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\MasterBahanController;
 use App\Http\Controllers\DetailTransaksiController;
-use App\Http\Controllers\UserController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -66,7 +67,11 @@ Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produ
 
 // Route untuk halaman transaksi
 Route::get('/transaksi', [TransaksiController::class, 'index'])->name('transaksi.index');
-Route::post('/transaksi', [TransaksiController::class, 'store'])->name('transaksi.store');
+Route::get('/transaksi/cari-produk', [TransaksiController::class, 'cariProduk'])->name('transaksi.cari-produk');
+Route::post('/keranjang/tambah/{id}', [TransaksiController::class, 'tambahKeKeranjang'])->name('keranjang.tambah');
+Route::put('/keranjang/update/{produk_id}', [TransaksiController::class, 'updateKeranjang'])->name('keranjang.update');
+Route::delete('/keranjang/hapus/{produk_id}', [TransaksiController::class, 'hapusDariKeranjang'])->name('keranjang.hapus');
+Route::post('/transaksi/store', [TransaksiController::class, 'store'])->name('transaksi.store');
 
 // Route untuk halaman riwayat transaksi
 Route::get('/riwayat-transaksi', [TransaksiController::class, 'riwayat'])->name('transaksi.riwayat');
@@ -94,4 +99,14 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/akun/{id}', [AkunController::class, 'update'])->name('akun.update'); // Update akun
     Route::delete('/akun/{id}', [AkunController::class, 'destroy'])->name('akun.destroy'); // Hapus akun   
 });
+
+
+//dropbox
+// Route::get('/dropbox', [DropboxController::class, 'showUploadForm']);
+
+// Route::get('/dropbox/create-folder/{path}', [DropboxController::class, 'createFolder']);
+// Route::get('/dropbox/list/{path?}', [DropboxController::class, 'listFolder']);
+// Route::post('/dropbox/upload', [LaporanController::class, 'uploadToDropbox']);
+// Route::get('/dropbox/temporary-link/{filePath}', [DropboxController::class, 'getTemporaryLink']);
+// Route::get('/dropbox/move/{from}/{to}', [DropboxController::class, 'moveFile']);
 

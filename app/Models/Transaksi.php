@@ -9,31 +9,20 @@ class Transaksi extends Model
 {
     use HasFactory;
 
-    protected $table = 'transaksi'; // Nama tabel
+    // Tentukan nama tabel jika tidak sesuai dengan nama default (laravel akan menganggap tabel bernama 'transaksi')
+    protected $table = 'transaksi';
 
+    // Tentukan atribut yang dapat diisi secara mass-assignment
     protected $fillable = [
-        'akun', // Relasi ke pengguna
-        'total_harga', 
-        'nama_pembeli', 
-        'tanggal_transaksi', 
+        'nama_pembeli',
+        'total_harga',
+        'tanggal_transaksi',
         'metode_pembayaran',
     ];
 
-    /**
-     * Relasi ke model User (pemilik akun).
-     */
-    public function akun()
-    {
-        return $this->belongsTo(User::class, 'akun', 'id');
-        // Foreign key: 'akun', primary key di users: 'id'
-    }
-
-    /**
-     * Relasi ke model DetailTransaksi.
-     */
+    // Relasi dengan detail transaksi (satu transaksi bisa memiliki banyak detail transaksi)
     public function detailTransaksi()
     {
-        return $this->hasMany(DetailTransaksi::class, 'idtransaksi', 'id');
-        // Foreign key di tabel detail_transaksi: 'idtransaksi'
+        return $this->hasMany(DetailTransaksi::class);
     }
 }
