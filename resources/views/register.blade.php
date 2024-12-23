@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Login | Brader Kopi</title>
+    <title>Register | Brader Kopi</title>
 
     <!-- Mobile Specific Metas -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -19,11 +19,11 @@
             height: 100vh;
             margin: 0;
             font-family: 'Inter', sans-serif;
-            background-color: #84f88a;
+            background-color: #84f88a; /* Updated to a soft green shade */
         }
 
-        .login-container {
-            background: #ffffff;
+        .register-container {
+            background: #e7fbec; /* Changed to a light cream background */
             padding: 20px 30px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -32,13 +32,13 @@
             text-align: center;
         }
 
-        .login-container h1 {
+        .register-container h1 {
             font-size: 24px;
             margin-bottom: 20px;
             color: #28a745;
         }
 
-        .login-container input {
+        .register-container input {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -47,7 +47,7 @@
             font-size: 16px;
         }
 
-        .login-container button {
+        .register-container button {
             width: 100%;
             padding: 10px;
             background-color: #28a745;
@@ -58,33 +58,36 @@
             cursor: pointer;
         }
 
-        .login-container button:hover {
+        .register-container button:hover {
             background-color: #218838;
         }
 
-        .login-container a {
+        .register-container a {
             display: block;
             margin-top: 15px;
             color: #28a745;
             text-decoration: none;
         }
 
-        .login-container a:hover {
+        .register-container a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
 
 <body>
-    <div class="login-container">
+    <div class="register-container">
         <h1>Brader Kopi</h1>
-        <form action="{{ route('login') }}" method="POST">
+        <form action="{{ route('register') }}" method="POST">
             @csrf
             <input type="text" name="username" placeholder="Username" required>
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
+            <input type="password" name="password_confirmation" placeholder="Confirm Password" required>
+            <button type="submit">Register</button>
         </form>
-        <a href="{{ route('register') }}">Register</a>
+        <a href="{{ route('login') }}">Already have an account? Login</a>
     </div>
 </body>
 

@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Stok;
 use App\Models\MasterBahan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MasterBahanController extends Controller
 {
     public function index()
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Ambil semua data bahan dari master_bahan
         $bahan = MasterBahan::all();
 
@@ -19,6 +23,9 @@ class MasterBahanController extends Controller
 
     public function store(Request $request)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Validasi data yang masuk
         $validatedData = $request->validate([
             'nama_bahan' => 'required|string|max:255',
@@ -46,6 +53,9 @@ class MasterBahanController extends Controller
 
     public function edit($id)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Ambil data bahan untuk diedit
         $bahan = MasterBahan::findOrFail($id);
 
@@ -55,6 +65,9 @@ class MasterBahanController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         $request->validate([
             'nama_bahan' => 'required|string|max:255',
             'satuan' => 'required|string|max:255',
@@ -81,6 +94,9 @@ class MasterBahanController extends Controller
 
     public function destroy($id)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Hapus bahan berdasarkan ID
         MasterBahan::destroy($id);
 

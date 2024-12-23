@@ -27,6 +27,13 @@ class DashboardController extends Controller
         $stokMenipis = Stok::where('jumlah_stok', '<=', 10)->get();
 
         // Return view dengan data
-        return view('dashboard.index', compact('totalProduk', 'totalBahan', 'transaksiHariIni', 'produkTerlaris', 'stokMenipis'));
+        return view('dashboard', compact(
+            'totalProduk',
+            'totalBahan',
+            'transaksiHariIni',
+            'produkTerlaris',
+            'stokMenipis',
+        ));
     }
+
 }

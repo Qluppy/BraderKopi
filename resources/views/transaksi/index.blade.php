@@ -76,7 +76,6 @@
                             <label for="nama_pembeli" class="form-label">Nama Pembeli</label>
                             <input type="text" name="nama_pembeli" id="nama_pembeli" placeholder="Nama Pembeli" required class="form-control" />
                         </div>
-
                         <div class="mb-3">
                             <label for="nomor_whatsapp" class="form-label">Nomor WhatsApp</label>
                             <input type="text" name="nomor_whatsapp" id="nomor_whatsapp" placeholder="Nomor WhatsApp" class="form-control" />

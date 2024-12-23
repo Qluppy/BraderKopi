@@ -7,12 +7,16 @@ use App\Models\MasterBahan;
 use App\Models\ProdukBahan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ProdukController extends Controller
 {
     public function index()
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Menampilkan halaman daftar produk
         $produk = Produk::all();
         $bahan = MasterBahan::all(); // Mengambil semua bahan
@@ -21,6 +25,12 @@ class ProdukController extends Controller
 
     public function create()
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Menampilkan form untuk menambahkan produk baru
         $bahan = MasterBahan::all(); // Ambil semua data bahan
         return view('produk.create', compact('bahan')); // Pastikan $bahan dikirim ke view
@@ -28,6 +38,9 @@ class ProdukController extends Controller
 
     public function store(Request $request)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         Log::info($request->all()); // Ini untuk debugging
 
         // Validasi input
@@ -72,6 +85,9 @@ class ProdukController extends Controller
 
     public function edit($id)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Menampilkan form untuk mengedit produk
         $produk = Produk::with('produkBahan.masterBahan')->findOrFail($id);
         $bahan = MasterBahan::all(); // Ambil semua bahan
@@ -80,6 +96,9 @@ class ProdukController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Validasi input
         $request->validate([
             'nama_produk' => 'required|string|max:255',
@@ -128,6 +147,9 @@ class ProdukController extends Controller
 
     public function destroy($id)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Hapus produk beserta bahan-bahannya
         $produk = Produk::findOrFail($id);
 

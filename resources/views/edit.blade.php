@@ -1,50 +1,57 @@
-@extends('layouts.app') <!-- Gunakan layout yang sesuai -->
+@extends('layouts.app')
+
+@section('title', 'Edit User')
 
 @section('content')
-    <h1 class="mb-4">Edit Akun</h1>
-
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('akun.update', $user->id) }}" method="POST">
-                @csrf
-                @method('PUT')
-
-                <div class="mb-3">
-                    <label for="username" class="form-label">Username:</label>
-                    <input 
-                        type="text" 
-                        name="username" 
-                        id="username" 
-                        class="form-control @error('username') is-invalid @enderror" 
-                        value="{{ old('username', $user->username) }}" 
-                        required>
-                    @error('username')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="mb-3">
-                    <label for="role" class="form-label">Role:</label>
-                    <select 
-                        name="role" 
-                        id="role" 
-                        class="form-select @error('role') is-invalid @enderror" 
-                        required>
-                        <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Admin</option>
-                        <option value="kasir" {{ $user->role == 'kasir' ? 'selected' : '' }}>Kasir</option>
-                    </select>
-                    @error('role')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <button type="submit" class="btn btn-primary">Update Akun</button>
-                <a href="{{ route('akun.index') }}" class="btn btn-secondary">Kembali</a>
-            </form>
-        </div>
+<div class="card-box mb-30">
+    <div class="pd-20">
+        <h4 class="text-blue h4">Edit User</h4>
     </div>
+    <div class="pb-20 px-3">
+        <form action="{{ route('users.update', $user->id) }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" class="form-control" name="name" value="{{ old('name', $user->name) }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" class="form-control" name="username" value="{{ old('username', $user->username) }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" class="form-control" name="email" value="{{ old('email', $user->email) }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" class="form-control" name="password" placeholder="Leave blank if not changing">
+            </div>
+
+            <div class="form-group">
+                <label>Role</label>
+                <select name="isAdmin" class="form-control">
+                    <option value="0" {{ old('isAdmin', $user->isAdmin) == 0 ? 'selected' : '' }}>User</option>
+                    <option value="1" {{ old('isAdmin', $user->isAdmin) == 1 ? 'selected' : '' }}>Admin</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status" class="form-control">
+                    <option value="active" {{ old('status', $user->status) == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ old('status', $user->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                </select>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Update User</button>
+                <a href="{{ route('users.index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection

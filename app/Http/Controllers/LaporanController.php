@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Spatie\Dropbox\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\DropboxTokenProvider;
 use App\Exports\LaporanPenjualanExport;
@@ -14,6 +15,9 @@ class LaporanController extends Controller
 {
     public function index(Request $request)
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Filter berdasarkan periode
         $startDate = $request->query('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->query('end_date', now()->endOfMonth()->toDateString());
@@ -42,6 +46,9 @@ class LaporanController extends Controller
     public function export(Request $request)
     {
         // Filter periode
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         $startDate = $request->query('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->query('end_date', now()->endOfMonth()->toDateString());
 

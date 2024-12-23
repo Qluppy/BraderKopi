@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Stok;
 use App\Models\MasterBahan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class StokController extends Controller
 {
     public function index()
     {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
         // Ambil semua data bahan dan stok dari tabel stok
         $stok = Stok::with('masterBahan')->get(); // Mengambil stok beserta data master_bahan terkait
 
@@ -19,6 +23,9 @@ class StokController extends Controller
 
     public function tambahStok(Request $request)
 {
+    if (!Auth::check() || !Auth::user()->isAdmin) {
+        return redirect('/home')->with('error', 'You do not have access to this page.');
+    }
     // Validasi data yang masuk
     $validatedData = $request->validate([
         'bahan_id' => 'required|exists:master_bahan,id',

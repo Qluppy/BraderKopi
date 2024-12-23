@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     protected $table = 'akun'; // Gunakan tabel 'pengguna'
@@ -16,7 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'username',
         'password',
-        'role',
+        'isAdmin',
     ];
 
     protected $hidden = [
