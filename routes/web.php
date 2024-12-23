@@ -72,6 +72,10 @@ Route::post('/keranjang/tambah/{id}', [TransaksiController::class, 'tambahKeKera
 Route::put('/keranjang/update/{produk_id}', [TransaksiController::class, 'updateKeranjang'])->name('keranjang.update');
 Route::delete('/keranjang/hapus/{produk_id}', [TransaksiController::class, 'hapusDariKeranjang'])->name('keranjang.hapus');
 Route::post('/transaksi/store', [TransaksiController::class, 'store'])->name('transaksi.store');
+Route::get('/transaksi/nota/{id}', [TransaksiController::class, 'nota'])->name('transaksi.nota');
+
+
+
 
 // Route untuk halaman riwayat transaksi
 Route::get('/riwayat-transaksi', [TransaksiController::class, 'riwayat'])->name('transaksi.riwayat');

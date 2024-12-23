@@ -5,13 +5,87 @@ namespace App\Http\Controllers;
 use App\Models\Stok;
 use App\Models\Produk;
 use App\Models\Transaksi;
+use Spatie\Dropbox\Client;
 use App\Models\ProdukBahan;
 use Illuminate\Http\Request;
 use App\Models\DetailTransaksi;
+use App\Services\FonnteService;
 use Illuminate\Support\Facades\Log;
+use App\Services\DropboxTokenProvider;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class TransaksiController extends Controller
 {
+    protected $client;
+    protected $fonnteService;
+
+    public function __construct(FonnteService $fonnteService)
+    {
+        $this->client = new Client($this->getValidAccessToken());
+        $this->fonnteService = $fonnteService;
+    }
+
+    /**
+     * Mendapatkan token akses yang valid.
+     */
+    private function getValidAccessToken()
+    {
+        $tokenProvider = new DropboxTokenProvider();
+        return $tokenProvider->getToken();
+    }
+
+    /**
+     * Fungsi untuk membuat PDF dari struk transaksi.
+     */
+    private function generateReceiptPDF($transaksi)
+    {
+        return PDF::loadView('transaksi.nota', compact('transaction'));
+    }
+
+    /**
+     * Fungsi untuk menyelesaikan transaksi, membuat struk PDF, dan mengunggah ke Dropbox.
+     */
+    private function completeCart($transaksi)
+    {
+        $pdf = $this->generateReceiptPDF($transaksi);
+
+        // Simpan sementara ke storage lokal
+        $filePath = storage_path("app/public/struk-transaksi-{$transaksi->id}.pdf");
+        $pdf->save($filePath);
+
+        // Unggah ke Dropbox
+        try {
+            $this->client->upload("/struk-transaksi-{$transaksi->id}.pdf", file_get_contents($filePath));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal mengunggah struk ke Dropbox: ' . $e->getMessage());
+        }
+
+        // Hapus file lokal setelah diunggah
+        unlink($filePath);
+    }
+
+    /**
+     * Fungsi untuk mengirimkan struk transaksi ke WhatsApp.
+     */
+    private function sendToWA($transaksi, $whatsappNumber)
+    {
+        $pdf = $this->generateReceiptPDF($transaksi);
+
+        // Simpan sementara file PDF
+        $localFilePath = storage_path("app/public/struk-transaksi-{$transaksi->id}.pdf");
+        $pdf->save($localFilePath);
+
+        // Unggah file ke Dropbox dan ambil link sementara
+        $dropboxPath = "/struk/struk-transaksi-{$transaksi->id}.pdf";
+        $this->client->upload($dropboxPath, file_get_contents($localFilePath));
+        $temporaryLink = $this->client->getTemporaryLink($dropboxPath);
+        $yesss = "https://youtube.com/shorts/ZbuXpCgM7x8?si=gTF0Zlre1zW2AnuC";
+
+        // Kirim ke WhatsApp menggunakan FonnteService
+        $message = "Halo, berikut adalah link struk transaksi Anda dengan ID: {$transaksi->id}. Terima kasih telah berbelanja!\n\nLink Struk: {$yesss}";
+        $this->fonnteService->sendMessage($whatsappNumber, $message);
+    }
+
     public function index()
     {
         $transaksi = Transaksi::with('detailTransaksi.produk')->get();
@@ -92,6 +166,16 @@ class TransaksiController extends Controller
         return redirect()->route('transaksi.index')->with('error', 'Produk tidak ditemukan di keranjang');
     }
 
+    public function nota($id)
+    {
+        // Ambil data transaksi berdasarkan ID
+        $transaksi = Transaksi::findOrFail($id);
+
+        // Kirim data transaksi ke view nota
+        return view('transaksi.nota', compact('transaksi'));
+    }
+
+
     public function store(Request $request)
     {
         Log::info($request->all());
@@ -156,19 +240,12 @@ class TransaksiController extends Controller
             ]);
         }
 
+        // Panggil fungsi completeCart dan sendToWA
+        $this->completeCart($transaksi);
+        $this->sendToWA($transaksi, $request->input('nomor_whatsapp'));
+
         session()->forget('keranjang');
 
-        return redirect()->route('transaksi.index');
-    }
-
-    public function cancel($id)
-    {
-        $transaksi = Transaksi::findOrFail($id);
-
-        $transaksi->update([
-            'status' => 'dibatalkan',
-        ]);
-
-        return redirect()->route('transaksi.index')->with('success', 'Transaksi telah dibatalkan');
+        return redirect()->route('transaksi.nota', ['id' => $transaksi->id]);
     }
 }

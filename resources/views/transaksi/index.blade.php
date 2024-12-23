@@ -78,6 +78,12 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="nomor_whatsapp" class="form-label">Nomor WhatsApp</label>
+                            <input type="text" name="nomor_whatsapp" id="nomor_whatsapp" placeholder="Nomor WhatsApp" class="form-control" />
+                        </div>
+                        
+
+                        <div class="mb-3">
                             <label for="metode_pembayaran" class="form-label">Metode Pembayaran</label>
                             <select name="metode_pembayaran" id="metode_pembayaran" class="form-select" required>
                                 <option value="cash">Cash</option>
