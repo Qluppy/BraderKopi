@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/produk/{id}/edit', [ProdukController::class, 'edit'])->name('produk.edit');
     Route::put('/produk/{id}', [ProdukController::class, 'update'])->name('produk.update');
     Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produk.destroy');
+    
 
     // Pengaturan Routes
     Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
@@ -62,9 +63,13 @@ Route::post('/transaksi/store', [TransaksiController::class, 'store'])->name('tr
 
     // User Management Routes
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');// Bukan `users.edit`
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::put('/users/{id}', [UserController::class, 'update'])->name('users.edit');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::resource('users', UserController::class)->except(['show']);
+    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
 });
 
 // Authentication Routes

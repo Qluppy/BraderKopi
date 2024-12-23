@@ -12,7 +12,6 @@ class UserController extends Controller
     // Fungsi untuk memeriksa apakah pengguna adalah admin
     protected function checkAdmin()
     {
-        // Jika pengguna belum login atau bukan admin, kembalikan false
         if (!Auth::check() || !Auth::user()->isAdmin) {
             return false;
         }
@@ -26,37 +25,46 @@ class UserController extends Controller
             return redirect('/dashboard')->with('error', 'You do not have access to this page.');
         }
 
-        $users = User::all(); // Ambil semua data user
+        $users = User::all();
         return view('users', compact('users'));
     }
 
-    // Menyimpan pengguna baru ke database
+    // Menampilkan form tambah user
     public function store(Request $request)
     {
+        // Cek apakah pengguna adalah admin
         if (!$this->checkAdmin()) {
             return redirect('/dashboard')->with('error', 'You do not have access to this page.');
         }
-
-        // Validasi data input
+    
+        // Validasi input
         $request->validate([
-            'name' => 'required',
-            'username' => 'required|unique:users',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
             'isAdmin' => 'required|boolean',
         ]);
-
-        // Membuat pengguna baru
-        User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'isAdmin' => filter_var($request->isAdmin, FILTER_VALIDATE_BOOLEAN),
-        ]);
-
-        return redirect()->route('users.index')->with('success', 'User created successfully.');
+    
+        try {
+            // Buat pengguna baru
+            User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'isAdmin' => filter_var($request->isAdmin, FILTER_VALIDATE_BOOLEAN),
+            ]);
+    
+            // Redirect ke halaman daftar pengguna dengan pesan sukses
+            return redirect()->route('users.index')->with('success', 'User created successfully.');
+        } catch (\Exception $e) {
+            // Jika gagal, kembalikan ke halaman create dengan pesan error
+            return redirect()->route('users.create')->with('error', 'Failed to create user. Please try again.');
+        }
     }
+    
+
 
     // Memperbarui data pengguna
     public function update(Request $request, $id)
@@ -97,4 +105,23 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
+    // Menampilkan form untuk mengedit user
+    public function edit($id)
+    {
+        if (!$this->checkAdmin()) {
+            return redirect('/dashboard')->with('error', 'You do not have access to this page.');
+        }
+    
+        $user = User::findOrFail($id);
+        return view('edit', compact('user'));  // Mengarah langsung ke 'resources/views/edit.blade.php'
+    }  
+    public function create()
+{
+    if (!$this->checkAdmin()) {
+        return redirect('/dashboard')->with('error', 'You do not have access to this page.');
+    }
+
+    return view('create');
+}      
+
 }

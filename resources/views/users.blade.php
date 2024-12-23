@@ -13,11 +13,48 @@
             <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
-        <!-- Button untuk menampilkan form create user -->
-        <a href="#" id="show-create-user" class="btn btn-primary mb-3">Add User</a>
+        <!-- Tombol Tambah User -->
+    <!-- Tombol Tambah User -->
+<a href="{{ route('users.create') }}" class="btn btn-primary mb-3">Add User</a>
+
+
+        <!-- Form Tambah User -->
+       <!-- Form Tambah User -->
+<div id="create-user-form" class="d-none">
+    <h5>Create New User</h5>
+    <form action="{{ route('users.store') }}" method="POST">
+        @csrf
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="Enter full name" required>
+        </div>
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="Enter email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
+        </div>
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select class="form-control" id="role" name="isAdmin" required>
+                <option value="1">Admin</option>
+                <option value="0">Kasir</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" id="cancel-create-user" class="btn btn-secondary">Cancel</button>
+    </form>
+</div>
+
 
         <!-- Tabel Daftar User -->
-        <div class="table-responsive data-table">
+        <div id="user-table" class="table-responsive">
             <table class="table table-striped hover nowrap">
                 <thead>
                     <tr>
@@ -69,53 +106,23 @@
                 </tbody>
             </table>
         </div>
-
-        <!-- Form untuk Create User -->
-        <div id="create-user-form" class="d-none">
-            <h5>Create New User</h5>
-            <form action="{{ route('users.store') }}" method="POST">
-                @csrf
-                <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" class="form-control" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" class="form-control" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" class="form-control" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" class="form-control" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label>Is Admin</label>
-                    <select name="isAdmin" class="form-control">
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">Create</button>
-                <button type="button" id="cancel-create-user" class="btn btn-secondary">Cancel</button>
-            </form>
-        </div>
     </div>
 </div>
 @endsection
 
 @section('scripts')
 <script>
+    // Event listener untuk tombol "Add User"
     document.getElementById('show-create-user').addEventListener('click', function () {
+        console.log('Tombol Add User diklik');
         document.getElementById('create-user-form').classList.remove('d-none');
-        document.querySelector('.data-table').classList.add('d-none');
+        document.getElementById('user-table').classList.add('d-none');
     });
 
+    // Event listener untuk tombol "Cancel"
     document.getElementById('cancel-create-user').addEventListener('click', function () {
         document.getElementById('create-user-form').classList.add('d-none');
-        document.querySelector('.data-table').classList.remove('d-none');
+        document.getElementById('user-table').classList.remove('d-none');
     });
 </script>
 @endsection
