@@ -60,21 +60,21 @@
                     </div>
                     <div class="card-body">
                         <table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>Nama Produk</th>
-            <th>Jumlah Terjual</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach ($produkTerlaris as $produk)
-        <tr>
-            <td>{{ $produk->nama_produk }}</td>
-            <td>{{ $produk->detailtransaksi_count }} kali terjual</td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Produk</th>
+                                    <th>Jumlah Terjual</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($produkTerlaris as $produk)
+                                <tr>
+                                    <td>{{ $produk->nama_produk }} </td>
+                                    <td>{{ $produk->detailtransaksi_count }} kali terjual</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -111,7 +111,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div>      
     </div>
 </section>
 @endsection

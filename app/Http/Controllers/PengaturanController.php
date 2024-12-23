@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Akun;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class PengaturanController extends Controller
@@ -13,7 +14,7 @@ class PengaturanController extends Controller
         // Ambil pengaturan toko (misalnya dari tabel settings)
         $setting = Setting::first(); // Ambil pengaturan pertama atau sesuaikan dengan logika Anda
         $metode_pembayaran = $setting ? explode(',', $setting->metode_pembayaran) : []; // Cek jika setting tidak null
-        $users = Akun::all(); // Ambil semua pengguna
+        $users = User::all(); // Ambil semua pengguna
 
         return view('pengaturan.index', compact('setting', 'metode_pembayaran', 'users')); // Gunakan 'setting' sebagai variabel
     }
