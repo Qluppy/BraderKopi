@@ -78,7 +78,7 @@ class ProdukController extends Controller
                 'jumlah_bahan' => $request->jumlah_stok[$key], // Simpan jumlah bahan
             ]);
         }
-
+        
         return redirect()->route('produk.index')->with('success', 'Produk berhasil ditambahkan!');
     }
 

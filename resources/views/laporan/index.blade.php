@@ -1,8 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h1 class="my-4">Laporan Penjualan</h1>
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>Laporan Penjualan</h1>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Form Filter -->
     <form method="GET" action="{{ route('laporan.index') }}" class="mb-4">
@@ -20,8 +28,8 @@
             </div>
             <div class="col-md-3 d-flex align-items-end">
                 <!-- Tombol Export -->
-                <a href="{{ route('laporan.export', ['start_date' => $startDate, 'end_date' => $endDate]) }}" 
-                   class="btn btn-success">
+                <a href="{{ route('laporan.export', ['start_date' => $startDate, 'end_date' => $endDate]) }}"
+                    class="btn btn-success">
                     Export Excel
                 </a>
             </div>
@@ -64,50 +72,50 @@
             <canvas id="salesChart" width="400" height="300"></canvas>
         </div>
     </div>
-</div>
+    </div>
 
-<!-- Chart.js Library -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    const salesChart = new Chart(ctx, {
-        type: 'bar', // Menggunakan grafik batang
-        data: {
-            labels: @json($rekapProduk->pluck('nama_produk')), // Nama produk sebagai label
-            datasets: [{
-                label: 'Jumlah Terjual',
-                data: @json($rekapProduk->pluck('total_terjual')), // Data jumlah terjual
-                backgroundColor: 'rgba(75, 192, 192, 0.2)', // Warna latar batang
-                borderColor: 'rgba(75, 192, 192, 1)', // Warna tepi batang
-                borderWidth: 1,
-                barThickness: 50, // Atur lebar batang lebih kecil
-                maxBarThickness: 80 // Atur lebar maksimal batang
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            const salesChart = new Chart(ctx, {
+                type: 'bar', // Menggunakan grafik batang
+                data: {
+                    labels: @json($rekapProduk->pluck('nama_produk')), // Nama produk sebagai label
+                    datasets: [{
+                        label: 'Jumlah Terjual',
+                        data: @json($rekapProduk->pluck('total_terjual')), // Data jumlah terjual
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Warna latar batang
+                        borderColor: 'rgba(75, 192, 192, 1)', // Warna tepi batang
+                        borderWidth: 1,
+                        barThickness: 50, // Atur lebar batang lebih kecil
+                        maxBarThickness: 80 // Atur lebar maksimal batang
+                    }]
                 },
-                tooltip: {
-                    enabled: true
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                },
-                x: {
-                    ticks: {
-                        autoSkip: true // Menghindari label yang terlalu padat jika sedikit data
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            enabled: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: true // Menghindari label yang terlalu padat jika sedikit data
+                            }
+                        }
                     }
                 }
-            }
-        }
-    });
-});
-</script>
+            });
+        });
+    </script>
 @endsection

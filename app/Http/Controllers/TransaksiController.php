@@ -39,7 +39,7 @@ class TransaksiController extends Controller
      */
     private function generateReceiptPDF($transaksi)
     {
-        return PDF::loadView('transaksi.nota', compact('transaction'));
+        return PDF::loadView('transaksi.nota', compact('transaksi'));
     }
 
     /**

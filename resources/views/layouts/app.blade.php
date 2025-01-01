@@ -113,18 +113,6 @@
                                 <p>Laporan</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="{{ route('akun.index') }}" class="nav-link">
-                                <i class="nav-icon fas fa-user"></i>
-                                <p>Kelola Akun</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('logout') }}" class="nav-link">
-                                <i class="nav-icon fas fa-power"></i>
-                                <p>Logout</p>
-                            </a>
-                        </li>
                     </ul>
                 </li>
                 <li class="nav-item">
