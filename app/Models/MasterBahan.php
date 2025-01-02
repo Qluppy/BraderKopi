@@ -14,8 +14,8 @@ class MasterBahan extends Model
     protected $fillable = [
         'nama_bahan',
         'deskripsi_bahan',
-        'jumlah_stok', // Pastikan ini juga ada
         'satuan', // Tambahkan satuan di sini
+        'jenis_bahan',
     ];
 
     public function stok()

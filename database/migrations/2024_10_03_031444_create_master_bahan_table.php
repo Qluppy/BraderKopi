@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama_bahan');
             $table->text('deskripsi_bahan')->nullable();
+            $table->string('jenis_bahan')->default('padat');
             $table->string('satuan'); // Pastikan kolom satuan ada
             $table->timestamps();
 

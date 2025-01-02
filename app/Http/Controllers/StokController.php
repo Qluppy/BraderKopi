@@ -9,61 +9,169 @@ use Illuminate\Support\Facades\Auth;
 
 class StokController extends Controller
 {
-    public function index()
-    {
-        if (!Auth::check() || !Auth::user()->isAdmin) {
-            return redirect('/home')->with('error', 'You do not have access to this page.');
-        }
-        // Ambil semua data bahan dan stok dari tabel stok
-        $stok = Stok::with('masterBahan')->get(); // Mengambil stok beserta data master_bahan terkait
-
-        // Return view dengan data stok
-        return view('stok.index', compact('stok'));
-    }
-
-    public function tambahStok(Request $request)
+    public function index(Request $request)
 {
     if (!Auth::check() || !Auth::user()->isAdmin) {
         return redirect('/home')->with('error', 'You do not have access to this page.');
     }
-    // Validasi data yang masuk
-    $validatedData = $request->validate([
-        'bahan_id' => 'required|exists:master_bahan,id',
-        'jumlah_stok' => 'required|numeric|min:1',
-        'satuan' => 'required|string' // Validasi satuan
-    ]);
 
-    // Cari bahan yang dipilih
-    $bahan = MasterBahan::find($validatedData['bahan_id']);
+    // Ambil data stok dan master bahan
+    $search = $request->get('search');
+    $filter = $request->get('filter', 'newest'); // Default filter ke 'newest'
+    $perPage = $request->get('per_page', 5); // Default ke 5, jika tidak ada inputan
 
-    // Konversi jumlah stok berdasarkan satuan
-    if ($validatedData['satuan'] == 'gram') {
-        $jumlahDalamKg = $validatedData['jumlah_stok'] / 1000; // Konversi gram ke kilogram
-    } elseif ($validatedData['satuan'] == 'mililiter') {
-        $jumlahDalamL = $validatedData['jumlah_stok'] / 1000; // Konversi mililiter ke liter
-    } elseif ($validatedData['satuan'] == 'liter') {
-        $jumlahDalamL = $validatedData['jumlah_stok']; // Jika satuannya liter
-    } else {
-        $jumlahDalamKg = $validatedData['jumlah_stok']; // Jika satuannya kilogram
+    $stok = Stok::with('masterBahan')
+        ->when($search, function ($query, $search) {
+            return $query->whereHas('masterBahan', function ($q) use ($search) {
+                $q->where('nama_bahan', 'like', "%{$search}%");
+            });
+        });
+
+    // Filter berdasarkan kondisi
+    if ($filter == 'newest') {
+        $stok = $stok->orderBy('created_at', 'desc');
+    } elseif ($filter == 'oldest') {
+        $stok = $stok->orderBy('created_at', 'asc');
+    } elseif ($filter == 'lowest_stock') {
+        $stok = $stok->orderBy('jumlah_stok', 'asc');
+    } elseif ($filter == 'highest_stock') {
+        $stok = $stok->orderBy('jumlah_stok', 'desc');
     }
 
-    // Tambahkan stok ke stok yang ada
-    $stok = Stok::where('idbahan', $validatedData['bahan_id'])->first();
-    if ($stok) {
-        if (in_array($validatedData['satuan'], ['gram', 'kilogram'])) {
-            $stok->jumlah_stok += $jumlahDalamKg; // Update stok jika satuannya dalam kg
-        } elseif (in_array($validatedData['satuan'], ['mililiter', 'liter'])) {
-            $stok->jumlah_stok += $jumlahDalamL; // Update stok jika satuannya dalam liter
-        }
-        $stok->save();
-    } else {
-        Stok::create([
-            'idbahan' => $validatedData['bahan_id'],
-            'jumlah_stok' => in_array($validatedData['satuan'], ['gram', 'kilogram']) ? $jumlahDalamKg : $jumlahDalamL
-        ]);
-    }
+    // Menggunakan paginate untuk membatasi data berdasarkan per halaman
+    $stok = $stok->paginate($perPage)->withQueryString(); // Menjaga query string seperti search dan filter
 
-    // Redirect kembali ke halaman stok dengan pesan sukses
-    return redirect()->route('stok.index')->with('success', 'Stok berhasil ditambahkan.');
+    return view('stok.index', compact('stok'));
 }
+
+
+
+
+    public function create()
+{
+    return view('stok.create'); // Mengarah ke view stok/create.blade.php
+}
+
+    public function store(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
+
+        $validatedData = $request->validate([
+            'nama_bahan' => 'required|string|max:255',
+            'satuan' => 'required|string|max:50',
+            'deskripsi_bahan' => 'nullable|string',
+            'jumlah_stok' => 'required|numeric|min:0',
+            'jenis_bahan' => 'required|string|in:padat,cair',
+        ]);
+
+        // Periksa nama bahan secara case-insensitive
+        $existingBahan = MasterBahan::whereRaw('LOWER(nama_bahan) = ?', [strtolower($validatedData['nama_bahan'])])->first();
+
+        if ($existingBahan) {
+            return redirect()->back()->withErrors([
+                'nama_bahan' => 'Nama bahan sudah ada (tidak sensitif terhadap huruf besar/kecil). Harap gunakan nama lain.',
+            ])->withInput();
+        }
+
+        $jumlahDalamSatuanDasar = match ($validatedData['satuan']) {
+            'kilogram' => $validatedData['jumlah_stok'] * 1000,
+            'liter' => $validatedData['jumlah_stok'] * 1000,
+            default => $validatedData['jumlah_stok'],
+        };
+
+        $satuanDasar = $validatedData['jenis_bahan'] === 'padat' ? 'gram' : 'mililiter';
+
+        // Buat master bahan dan stok
+        $bahan = MasterBahan::create([
+            'nama_bahan' => $validatedData['nama_bahan'],
+            'satuan' => $satuanDasar,
+            'deskripsi_bahan' => $validatedData['deskripsi_bahan'],
+            'jenis_bahan' => $validatedData['jenis_bahan'],
+        ]);
+
+        Stok::create([
+            'idbahan' => $bahan->id,
+            'jumlah_stok' => $jumlahDalamSatuanDasar,
+        ]);
+
+        return redirect()->route('stok.index')->with('success', 'Bahan berhasil ditambahkan.');
+    }
+
+    public function tambahStok(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
+
+        $validatedData = $request->validate([
+            'bahan_id' => 'required|exists:master_bahan,id',
+            'jumlah_stok' => 'required|numeric|min:1',
+        ]);
+
+        $bahan = MasterBahan::findOrFail($validatedData['bahan_id']);
+        $jumlahDalamSatuanDasar = match ($request->input('satuan')) {
+            'kilogram' => $validatedData['jumlah_stok'] * 1000,
+            'liter' => $validatedData['jumlah_stok'] * 1000,
+            default => $validatedData['jumlah_stok'],
+        };
+
+        $stok = Stok::where('idbahan', $bahan->id)->first();
+        if ($stok) {
+            $stok->jumlah_stok += $jumlahDalamSatuanDasar;
+            $stok->save();
+        } else {
+            Stok::create([
+                'idbahan' => $bahan->id,
+                'jumlah_stok' => $jumlahDalamSatuanDasar,
+            ]);
+        }
+
+        return redirect()->route('stok.index')->with('success', 'Stok berhasil ditambahkan.');
+    }
+
+    public function edit($id)
+    {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
+        // Ambil data bahan untuk diedit
+        $bahan = MasterBahan::findOrFail($id);
+
+        // Return view edit dengan data bahan
+        return view('stok.index', compact('bahan'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
+        $request->validate([
+            'nama_bahan' => 'required|string|max:255',
+            'deskripsi_bahan' => 'nullable|string',
+        ]);
+
+        // Update data di master_bahan
+        $bahan = MasterBahan::findOrFail($id);
+        $bahan->nama_bahan = $request->nama_bahan;
+        $bahan->deskripsi_bahan = $request->deskripsi_bahan;
+        $bahan->save();
+
+        return redirect()->route('stok.index')->with('success', 'Bahan berhasil diperbarui.');
+    }
+
+    public function destroy($id)
+    {
+        if (!Auth::check() || !Auth::user()->isAdmin) {
+            return redirect('/home')->with('error', 'You do not have access to this page.');
+        }
+        // Hapus bahan berdasarkan ID
+        MasterBahan::destroy($id);
+
+        // Redirect kembali ke halaman master bahan dengan pesan sukses
+        return redirect()->route('stok.index')->with('success', 'Bahan berhasil dihapus.');
+    }
+
 }

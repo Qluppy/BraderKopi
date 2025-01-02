@@ -39,30 +39,48 @@ class TransaksiController extends Controller
      */
     private function generateReceiptPDF($transaksi)
     {
-        return PDF::loadView('transaksi.nota', compact('transaction'));
+        return PDF::loadView('transaksi.nota-pdf', compact('transaksi'));
     }
+
 
     /**
      * Fungsi untuk menyelesaikan transaksi, membuat struk PDF, dan mengunggah ke Dropbox.
      */
     private function completeCart($transaksi)
     {
+        // Generate PDF menggunakan view tanpa layout
         $pdf = $this->generateReceiptPDF($transaksi);
 
-        // Simpan sementara ke storage lokal
+        // Simpan sementara file PDF di storage lokal
         $filePath = storage_path("app/public/struk-transaksi-{$transaksi->id}.pdf");
         $pdf->save($filePath);
 
         // Unggah ke Dropbox
         try {
-            $this->client->upload("/struk-transaksi-{$transaksi->id}.pdf", file_get_contents($filePath));
+            // Pastikan folder di Dropbox ada
+            $this->client->createFolder('/struk');
+        } catch (\Spatie\Dropbox\Exceptions\BadRequest $e) {
+            // Abaikan error jika folder sudah ada
+        }
+
+        try {
+            // Upload file ke Dropbox
+            $this->client->upload(
+                "/struk/struk-transaksi-{$transaksi->id}.pdf",
+                file_get_contents($filePath),
+                'overwrite'
+            );
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal mengunggah struk ke Dropbox: ' . $e->getMessage());
         }
 
         // Hapus file lokal setelah diunggah
-        unlink($filePath);
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
     }
+
+
 
     /**
      * Fungsi untuk mengirimkan struk transaksi ke WhatsApp.
@@ -75,16 +93,28 @@ class TransaksiController extends Controller
         $localFilePath = storage_path("app/public/struk-transaksi-{$transaksi->id}.pdf");
         $pdf->save($localFilePath);
 
+        // Pastikan folder di Dropbox ada
+        try {
+            $this->client->createFolder('/struk');
+        } catch (\Spatie\Dropbox\Exceptions\BadRequest $e) {
+            // Abaikan error jika folder sudah ada
+        }
+
         // Unggah file ke Dropbox dan ambil link sementara
         $dropboxPath = "/struk/struk-transaksi-{$transaksi->id}.pdf";
-        $this->client->upload($dropboxPath, file_get_contents($localFilePath));
+        $this->client->upload($dropboxPath, file_get_contents($localFilePath), 'overwrite');
         $temporaryLink = $this->client->getTemporaryLink($dropboxPath);
-        $yesss = "https://youtube.com/shorts/ZbuXpCgM7x8?si=gTF0Zlre1zW2AnuC";
 
         // Kirim ke WhatsApp menggunakan FonnteService
-        $message = "Halo, berikut adalah link struk transaksi Anda dengan ID: {$transaksi->id}. Terima kasih telah berbelanja!\n\nLink Struk: {$yesss}";
+        $message = "Halo, berikut adalah link struk transaksi Anda dengan ID: {$transaksi->id}. Terima kasih telah berbelanja!\n\nLink Struk: {$temporaryLink}";
         $this->fonnteService->sendMessage($whatsappNumber, $message);
+
+        // Hapus file lokal setelah selesai
+        if (file_exists($localFilePath)) {
+            unlink($localFilePath);
+        }
     }
+
 
     public function index()
     {

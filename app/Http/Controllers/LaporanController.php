@@ -18,24 +18,36 @@ class LaporanController extends Controller
         if (!Auth::check() || !Auth::user()->isAdmin) {
             return redirect('/home')->with('error', 'You do not have access to this page.');
         }
+
         // Filter berdasarkan periode
         $startDate = $request->query('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->query('end_date', now()->endOfMonth()->toDateString());
 
-        // Ambil data rekapitulasi per produk
+        // Ambil parameter pagination
+        $perPage = $request->query('per_page', 5); // Default 5 per halaman
+
+        // Ambil data rekapitulasi per produk dengan pagination
         $rekapProduk = DB::table('detailtransaksi')
             ->join('transaksi', 'detailtransaksi.transaksi_id', '=', 'transaksi.id')
             ->join('produk', 'detailtransaksi.produk_id', '=', 'produk.id')
             ->select(
+                'transaksi.tanggal_transaksi', // Tambahkan kolom tanggal transaksi
                 'detailtransaksi.produk_id',
                 'produk.nama_produk',
+                'produk.harga_produk', // Harga satuan
                 DB::raw('SUM(detailtransaksi.jumlah) AS total_terjual'),
                 DB::raw('SUM(detailtransaksi.jumlah * produk.harga_produk) AS total_pendapatan')
             )
             ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
-            ->groupBy('detailtransaksi.produk_id', 'produk.nama_produk')
-            ->orderByDesc('total_terjual')
-            ->get();
+            ->groupBy(
+                'transaksi.tanggal_transaksi',
+                'detailtransaksi.produk_id',
+                'produk.nama_produk',
+                'produk.harga_produk'
+            )
+            ->orderByDesc('transaksi.tanggal_transaksi') // Urutkan berdasarkan tanggal transaksi terbaru
+            ->paginate($perPage)
+            ->withQueryString(); // Menjaga query string untuk start_date, end_date, dan per_page
 
         // Total Penjualan Seluruhnya
         $totalPenjualan = $rekapProduk->sum('total_pendapatan');
@@ -45,10 +57,11 @@ class LaporanController extends Controller
 
     public function export(Request $request)
     {
-        // Filter periode
         if (!Auth::check() || !Auth::user()->isAdmin) {
             return redirect('/home')->with('error', 'You do not have access to this page.');
         }
+
+        // Filter periode
         $startDate = $request->query('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->query('end_date', now()->endOfMonth()->toDateString());
 
@@ -57,14 +70,19 @@ class LaporanController extends Controller
             ->join('transaksi', 'detailtransaksi.transaksi_id', '=', 'transaksi.id')
             ->join('produk', 'detailtransaksi.produk_id', '=', 'produk.id')
             ->select(
-                'transaksi.tanggal_transaksi',
+                'transaksi.tanggal_transaksi', // Tambahkan kolom tanggal transaksi
                 'produk.nama_produk',
+                'produk.harga_produk',
                 DB::raw('SUM(detailtransaksi.jumlah) AS total_terjual'),
-                DB::raw('SUM(transaksi.total_harga) AS total_pendapatan')
+                DB::raw('SUM(detailtransaksi.jumlah * produk.harga_produk) AS total_pendapatan')
             )
             ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
-            ->groupBy('transaksi.tanggal_transaksi', 'produk.nama_produk')
-            ->orderByDesc('total_terjual')
+            ->groupBy(
+                'transaksi.tanggal_transaksi',
+                'produk.nama_produk',
+                'produk.harga_produk'
+            )
+            ->orderByDesc('transaksi.tanggal_transaksi')
             ->get();
 
         // Nama file export

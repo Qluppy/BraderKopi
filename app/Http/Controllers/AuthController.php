@@ -86,7 +86,7 @@ class AuthController extends Controller
 
         // Jika pengguna ditemukan dan data login sesuai
         if ($user && Auth::attempt(['id' => $user->id, 'password' => $request->password])) {
-            return redirect()->intended('dashboard'); 
+            return redirect()->intended('/dashboard'); 
             // Mengarahkan ke halaman dashboard atau halaman yang diminta sebelumnya
         }
 

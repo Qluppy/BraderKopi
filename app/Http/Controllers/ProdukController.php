@@ -12,16 +12,39 @@ use Illuminate\Support\Facades\Storage;
 
 class ProdukController extends Controller
 {
-    public function index()
-    {
-        if (!Auth::check() || !Auth::user()->isAdmin) {
-            return redirect('/home')->with('error', 'You do not have access to this page.');
-        }
-        // Menampilkan halaman daftar produk
-        $produk = Produk::all();
-        $bahan = MasterBahan::all(); // Mengambil semua bahan
-        return view('produk.index', compact('produk', 'bahan')); // Mengirim variabel produk dan bahan ke view
+    public function index(Request $request)
+{
+    if (!Auth::check() || !Auth::user()->isAdmin) {
+        return redirect('/home')->with('error', 'You do not have access to this page.');
     }
+
+    // Ambil data produk dan master bahan
+    $search = $request->get('search');
+    $filter = $request->get('filter', 'newest'); // Default filter ke 'newest'
+    $perPage = $request->get('per_page', 5); // Default ke 5, jika tidak ada inputan
+
+    $produk = Produk::with('bahan')
+        ->when($search, function ($query, $search) {
+            return $query->where('nama_produk', 'like', "%{$search}%");
+        });
+
+    // Filter berdasarkan kondisi
+    if ($filter == 'newest') {
+        $produk = $produk->orderBy('created_at', 'desc');
+    } elseif ($filter == 'oldest') {
+        $produk = $produk->orderBy('created_at', 'asc');
+    } elseif ($filter == 'lowest_price') {
+        $produk = $produk->orderBy('harga_produk', 'asc');
+    } elseif ($filter == 'highest_price') {
+        $produk = $produk->orderBy('harga_produk', 'desc');
+    }
+
+    // Menggunakan paginate untuk membatasi data berdasarkan per halaman
+    $produk = $produk->paginate($perPage)->withQueryString(); // Menjaga query string seperti search dan filter
+
+    return view('produk.index', compact('produk'));
+}
+
 
     public function create()
     {
@@ -37,50 +60,61 @@ class ProdukController extends Controller
     }
 
     public function store(Request $request)
-    {
-        if (!Auth::check() || !Auth::user()->isAdmin) {
-            return redirect('/home')->with('error', 'You do not have access to this page.');
-        }
-        Log::info($request->all()); // Ini untuk debugging
-
-        // Validasi input
-        $request->validate([
-            'nama_produk' => 'required|string|max:255',
-            'harga_produk' => 'required|numeric',
-            'deskripsi_produk' => 'nullable|string',
-            'gambar_produk' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'bahan' => 'required|array',
-            'bahan.*' => 'exists:master_bahan,id',
-            'jumlah_stok' => 'required|array',
-            'jumlah_stok.*' => 'numeric|min:0',
-        ]);
-
-        // Upload gambar produk jika ada
-        $gambarPath = null;
-        if ($request->hasFile('gambar_produk')) {
-            $gambarPath = $request->file('gambar_produk')->store('produk', 'public');
-            Log::info('Gambar path: ' . $gambarPath); // Untuk memastikan path gambar
-        }
-
-        // Buat produk baru
-        $produk = Produk::create([
-            'nama_produk' => $request->nama_produk,
-            'harga_produk' => $request->harga_produk,
-            'deskripsi_produk' => $request->deskripsi_produk,
-            'gambar_produk' => $gambarPath, // Simpan path gambar
-        ]);
-
-        // Simpan bahan-bahan yang diperlukan untuk produk
-        foreach ($request->bahan as $key => $idbahan) {
-            ProdukBahan::create([
-                'idproduk' => $produk->id,
-                'idbahan' => $idbahan,
-                'jumlah_bahan' => $request->jumlah_stok[$key], // Simpan jumlah bahan
-            ]);
-        }
-
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil ditambahkan!');
+{
+    if (!Auth::check() || !Auth::user()->isAdmin) {
+        return redirect('/home')->with('error', 'You do not have access to this page.');
     }
+
+    Log::info($request->all()); // Ini untuk debugging
+
+    // Validasi input
+    $request->validate([
+        'nama_produk' => 'required|string|max:255',
+        'harga_produk' => 'required|numeric',
+        'deskripsi_produk' => 'nullable|string',
+        'gambar_produk' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        'bahan' => 'required|array',
+        'bahan.*' => 'exists:master_bahan,id',
+        'jumlah_stok' => 'required|array',
+        'jumlah_stok.*' => 'numeric|min:0',
+    ]);
+
+    // Periksa nama produk secara case-insensitive
+    $existingProduk = Produk::whereRaw('LOWER(nama_produk) = ?', [strtolower($request->nama_produk)])->first();
+
+    if ($existingProduk) {
+        return redirect()->back()->withErrors([
+            'nama_produk' => 'Nama produk sudah ada (tidak sensitif terhadap huruf besar/kecil). Harap gunakan nama lain.',
+        ])->withInput();
+    }
+
+    // Upload gambar produk jika ada
+    $gambarPath = null;
+    if ($request->hasFile('gambar_produk')) {
+        $gambarPath = $request->file('gambar_produk')->store('produk', 'public');
+        Log::info('Gambar path: ' . $gambarPath); // Untuk memastikan path gambar
+    }
+
+    // Buat produk baru
+    $produk = Produk::create([
+        'nama_produk' => $request->nama_produk,
+        'harga_produk' => $request->harga_produk,
+        'deskripsi_produk' => $request->deskripsi_produk,
+        'gambar_produk' => $gambarPath, // Simpan path gambar
+    ]);
+
+    // Simpan bahan-bahan yang diperlukan untuk produk
+    foreach ($request->bahan as $key => $idbahan) {
+        ProdukBahan::create([
+            'idproduk' => $produk->id,
+            'idbahan' => $idbahan,
+            'jumlah_bahan' => $request->jumlah_stok[$key], // Simpan jumlah bahan
+        ]);
+    }
+
+    return redirect()->route('produk.index')->with('success', 'Produk berhasil ditambahkan!');
+}
+
 
 
     public function edit($id)
@@ -95,55 +129,43 @@ class ProdukController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        if (!Auth::check() || !Auth::user()->isAdmin) {
-            return redirect('/home')->with('error', 'You do not have access to this page.');
-        }
-        // Validasi input
-        $request->validate([
-            'nama_produk' => 'required|string|max:255',
-            'harga_produk' => 'required|numeric',
-            'deskripsi_produk' => 'nullable|string',
-            'gambar_produk' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'bahan' => 'required|array',
-            'bahan.*' => 'exists:master_bahan,idbahan',
-            'jumlah_bahan' => 'required|array',
-            'jumlah_bahan.*' => 'numeric|min:0',
-        ]);
-
-        $produk = Produk::findOrFail($id);
-
-        // Upload gambar baru jika ada
-        if ($request->hasFile('gambar_produk')) {
-            // Hapus gambar lama
-            if ($produk->gambar_produk) {
-                Storage::disk('public')->delete($produk->gambar_produk);
-            }
-            $gambarPath = $request->file('gambar_produk')->store('produk', 'public');
-            $produk->gambar_produk = $gambarPath;
-        }
-
-        // Update data produk
-        $produk->update([
-            'nama_produk' => $request->nama_produk,
-            'harga_produk' => $request->harga_produk,
-            'deskripsi_produk' => $request->deskripsi_produk,
-        ]);
-
-        // Hapus bahan-bahan lama
-        ProdukBahan::where('idproduk', $produk->id)->delete();
-
-        // Tambahkan bahan-bahan baru
-        foreach ($request->bahan as $key => $idbahan) {
-            ProdukBahan::create([
-                'idproduk' => $produk->id,
-                'idbahan' => $idbahan,
-                'jumlah_bahan' => $request->jumlah_bahan[$key],
-            ]);
-        }
-
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil diperbarui!');
+{
+    if (!Auth::check() || !Auth::user()->isAdmin) {
+        return redirect('/home')->with('error', 'You do not have access to this page.');
     }
+
+    // Validasi input hanya untuk produk yang bisa diedit
+    $request->validate([
+        'nama_produk' => 'required|string|max:255',
+        'harga_produk' => 'required|numeric',
+        'deskripsi_produk' => 'nullable|string',
+        'gambar_produk' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+    ]);
+
+    // Temukan produk berdasarkan id
+    $produk = Produk::findOrFail($id);
+
+    // Upload gambar baru jika ada
+    if ($request->hasFile('gambar_produk')) {
+        // Hapus gambar lama jika ada
+        if ($produk->gambar_produk) {
+            Storage::disk('public')->delete($produk->gambar_produk);
+        }
+        // Simpan gambar baru
+        $gambarPath = $request->file('gambar_produk')->store('produk', 'public');
+        $produk->gambar_produk = $gambarPath;
+    }
+
+    // Perbarui data produk (nama, harga, deskripsi)
+    $produk->update([
+        'nama_produk' => $request->nama_produk,
+        'harga_produk' => $request->harga_produk,
+        'deskripsi_produk' => $request->deskripsi_produk,
+    ]);
+
+    return redirect()->route('produk.index')->with('success', 'Produk berhasil diperbarui!');
+}
+
 
     public function destroy($id)
     {

@@ -1,10 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AkunController;
 use App\Http\Controllers\StokController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\DropboxController;
 use App\Http\Controllers\LaporanController;
@@ -36,11 +34,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/stok', [StokController::class, 'index'])->name('stok.index');
     Route::post('/stok/tambah', [StokController::class, 'tambahStok'])->name('stok.tambah');
     Route::resource('stok', StokController::class);
-
-    // Route master bahan
-    Route::get('/masterbahan', [MasterBahanController::class, 'index'])->name('masterbahan.index');
-    Route::post('/masterbahan', [MasterBahanController::class, 'store'])->name('masterbahan.store');
-    Route::resource('masterbahan', MasterBahanController::class);
+    Route::get('/stok/create', [StokController::class, 'create'])->name('stok.create');
+    Route::post('/stok', [StokController::class, 'store'])->name('stok.store');
 
     // Route untuk halaman produk
     Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
