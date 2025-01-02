@@ -153,6 +153,10 @@
                                 <input type="file" class="form-control" id="gambar_produk" name="gambar_produk"
                                     accept="image/*">
                             </div>
+                            <div class="mb-3">
+                                <label for="deskripsi_produk" class="form-label">Deskripsi</label>
+                                <textarea name="deskripsi_produk" id="deskripsi_produk" class="form-control" >{{ $produkItem->deskripsi_produk }}</textarea>
+                            </div>
                             <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                         </form>
                     </div>
