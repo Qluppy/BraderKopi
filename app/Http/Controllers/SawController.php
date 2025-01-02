@@ -3,79 +3,164 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Transaksi;
+use Illuminate\Support\Facades\Log;
 
-class SawController extends Controller
+class SAWController extends Controller
 {
-    public function index()
+    public function calculate(Request $request)
     {
-        // Data awal untuk ditampilkan di halaman result tanpa perhitungan
+        Log::info('Memulai perhitungan SAW.');
+
+        // Mendapatkan bulan dan tahun dari request atau default ke saat ini
+        $bulan = $request->input('bulan', now()->month);
+        $tahun = $request->input('tahun', now()->year);
+
+        // Mengambil data transaksi untuk bulan dan tahun yang dipilih
+        $transactions = Transaksi::whereYear('tanggal_transaksi', $tahun)
+            ->whereMonth('tanggal_transaksi', $bulan)
+            ->with('detailTransaksi.produk.produkBahan.masterBahan')
+            ->get();
+
+        $groupedAlternatives = []; // Untuk mengelompokkan produk
+        foreach ($transactions as $transaction) {
+            foreach ($transaction->detailTransaksi as $detail) {
+                $produk = $detail->produk;
+
+                $namaProduk = $produk->nama_produk ?? "Produk Tidak Diketahui";
+                $hargaProduk = $produk->harga_produk ?? 0;
+                $terjual = $detail->jumlah ?? 0;
+
+                // Mendapatkan jumlah biji kopi dari relasi produk dan bahan
+                $bijiKopi = $produk->produkBahan
+                    ->where('masterBahan.nama_bahan', 'Biji Kopi')
+                    ->sum('jumlah_bahan') ?? 0;
+
+                // Jika produk sudah ada di grup, akumulasikan data
+                if (isset($groupedAlternatives[$namaProduk])) {
+                    $groupedAlternatives[$namaProduk]['terjual'] += $terjual;
+                } else {
+                    // Tambahkan produk ke grup
+                    $groupedAlternatives[$namaProduk] = [
+                        'harga_produk' => $hargaProduk,
+                        'biji_kopi' => $bijiKopi,
+                        'terjual' => $terjual,
+                    ];
+                }
+            }
+        }
+
+        // Konversi hasil grup ke dalam array biasa
         $alternatives = [];
-        $normalizedAlternatives = [];
-        $finalScores = [];
+        $alternativeLabels = [];
+        foreach ($groupedAlternatives as $namaProduk => $data) {
+            $alternatives[] = $data;
+            $alternativeLabels[] = ['nama_produk' => $namaProduk];
+        }
+
+        // Jika tidak ada data alternatif, kembalikan dengan peringatan
+        if (empty($alternatives)) {
+            Log::warning('Tidak ada data transaksi untuk bulan: ' . $bulan . ', tahun: ' . $tahun);
+            return view('result', [
+                'alternatives' => [],
+                'alternativeLabels' => [],
+                'normalizedAlternatives' => [],
+                'finalScores' => [],
+                'bulan' => $bulan,
+                'tahun' => $tahun,
+            ])->with('warning', 'Tidak ada data transaksi untuk periode yang dipilih.');
+        }
+
+        // Bobot kriteria dan jenis kriteria
+        $weights = [0.4, 0.2, 0.4]; // Bobot untuk harga, biji kopi, dan terjual
+        $criteriaTypes = ['benefit', 'benefit', 'cost']; // Harga dan biji kopi sebagai benefit, terjual sebagai cost
+
+        // Pastikan jumlah elemen di $weights dan $criteriaTypes sesuai dengan jumlah kriteria
+        if (count($weights) != count($criteriaTypes) || count($weights) != count($alternatives[0])) {
+            Log::error('Jumlah tipe kriteria atau bobot tidak sesuai dengan jumlah kriteria.');
+            throw new \Exception('Jumlah tipe kriteria atau bobot tidak sesuai dengan jumlah kriteria.');
+        }
+
+        // Normalisasi matriks
+        $normalizedAlternatives = $this->normalize($alternatives, $criteriaTypes);
+
+        // Menghitung skor akhir menggunakan bobot
+        $finalScores = $this->calculateScores($normalizedAlternatives, $weights);
+
+        Log::info('Perhitungan SAW selesai.');
+// Cari skor yang mendekati angka 1
+$closestToOneIndex = array_reduce(array_keys($finalScores), function ($carry, $index) use ($finalScores) {
+    return (abs($finalScores[$index] - 1) < abs($finalScores[$carry] - 1)) ? $index : $carry;
+}, 0);
+
+$lowestScore = [
+    'nama_produk' => $alternativeLabels[$closestToOneIndex]['nama_produk'] ?? '-',
+    'skor' => $finalScores[$closestToOneIndex] ?? 0,
+];
+
 
         return view('result', [
             'alternatives' => $alternatives,
+            'alternativeLabels' => $alternativeLabels,
             'normalizedAlternatives' => $normalizedAlternatives,
             'finalScores' => $finalScores,
+            'lowestScore' => $lowestScore,
+            'bulan' => $bulan,
+            'tahun' => $tahun,
         ]);
     }
 
-    public function calculate()
+    private function normalize(array $alternatives, array $criteriaTypes)
     {
-        // Data alternatif (Harga, Biji kopi, Terjual)
-        $alternatives = [
-            [3000000, 48, 18],  // A1
-            [4000000, 64, 17],  // A2
-            [5000000, 32, 18],  // A3
-        ];
+        Log::info('Melakukan normalisasi data alternatif.');
 
-        // Bobot untuk masing-masing kriteria
-        $weights = [0.4, 0.2, 0.4];
+        $criteriaKeys = array_keys($alternatives[0]);
 
-        // Jenis kriteria (cost atau benefit)
-        $criteriaTypes = ['cost', 'benefit', 'benefit']; // Harga = cost, Biji kopi = benefit, Terjual = benefit
+        if (count($criteriaKeys) != count($criteriaTypes)) {
+            Log::error('Jumlah tipe kriteria tidak sesuai dengan jumlah kriteria.');
+            throw new \Exception('Jumlah tipe kriteria tidak sesuai dengan jumlah kriteria.');
+        }
 
-        // Step 1: Normalisasi Matriks
-        $normalizedAlternatives = $this->normalize($alternatives, $criteriaTypes);
+        $normalized = [];
+        foreach ($criteriaKeys as $i => $key) {
+            $column = array_column($alternatives, $key);
 
-        // Step 2: Hitung skor akhir
+            if ($criteriaTypes[$i] === 'benefit') {
+                $max = max($column);
+                $normalizedColumn = $max == 0
+                    ? array_fill(0, count($column), 0)
+                    : array_map(fn($value) => $value / $max, $column);
+            } else {
+                $min = min($column);
+                $normalizedColumn = $min == 0
+                    ? array_fill(0, count($column), 0)
+                    : array_map(fn($value) => $min / $value, $column);
+            }
+
+            foreach ($normalizedColumn as $index => $value) {
+                $normalized[$index][$key] = $value;
+            }
+        }
+
+        Log::info('Normalisasi selesai.', $normalized);
+
+        return $normalized;
+    }
+
+    private function calculateScores(array $normalizedAlternatives, array $weights)
+    {
+        Log::info('Menghitung skor akhir untuk setiap alternatif.');
+
+        $criteriaKeys = array_keys($normalizedAlternatives[0]);
         $finalScores = [];
-        foreach ($normalizedAlternatives as $alternative) {
+        foreach ($normalizedAlternatives as $normalized) {
             $score = 0;
-            foreach ($alternative as $index => $value) {
-                $score += $value * $weights[$index];
+            foreach ($criteriaKeys as $index => $key) {
+                $score += $normalized[$key] * $weights[$index];
             }
             $finalScores[] = $score;
         }
 
-        return view('result', [
-            'alternatives' => $alternatives,
-            'normalizedAlternatives' => $normalizedAlternatives,
-            'finalScores' => $finalScores,
-        ]);
-    }
-
-    public function normalize($matrix, $criteriaTypes)
-    {
-        $normalizedMatrix = [];
-        $numCriteria = count($matrix[0]);
-
-        for ($j = 0; $j < $numCriteria; $j++) {
-            $column = array_column($matrix, $j);
-
-            if ($criteriaTypes[$j] === 'cost') { // Kriteria minimisasi (cost)
-                $minValue = min($column);
-                foreach ($column as $index => $value) {
-                    $normalizedMatrix[$index][$j] = $minValue / $value;
-                }
-            } else { // Kriteria maksimisasi (benefit)
-                $maxValue = max($column);
-                foreach ($column as $index => $value) {
-                    $normalizedMatrix[$index][$j] = $value / $maxValue;
-                }
-            }
-        }
-
-        return $normalizedMatrix;
+        return $finalScores;
     }
 }
