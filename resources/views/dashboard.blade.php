@@ -67,18 +67,23 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($produkTerlaris as $produk)
+                                    @forelse ($produkTerlaris as $produk)
                                         <tr>
                                             <td>{{ $produk->nama_produk }}</td>
-                                            <td>{{ $produk->detail_transaksi_count?? 0 }} kali terjual</td>
+                                            <td>{{ $produk->detail_transaksi_count ?? 0 }} kali terjual</td>
                                         </tr>
-                                    @endforeach
+                                    @empty
+                                        <tr>
+                                            <td colspan="2" class="text-center">Belum ada produk yang terjual.</td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <!-- Stok Menipis -->
             <div class="row">

@@ -18,10 +18,13 @@ class DashboardController extends Controller
         $transaksiHariIni = Transaksi::whereDate('tanggal_transaksi', today())->count();
 
         // Menggunakan relasi yang benar untuk produk terlaris
-        $produkTerlaris = Produk::withCount('detailTransaksi') // Pastikan nama relasi sesuai
-                            ->orderBy('detail_transaksi_count', 'desc')
-                            ->take(5)
-                            ->get();
+        $produkTerlaris = Produk::withCount('detailTransaksi') // Hitung jumlah transaksi
+            ->get() // Ambil semua data terlebih dahulu
+            ->filter(function ($produk) {
+                return $produk->detail_transaksi_count > 0; // Saring produk yang pernah terjual
+            })
+            ->sortByDesc('detail_transaksi_count') // Urutkan berdasarkan jumlah transaksi
+            ->take(5); // Ambil 5 produk terlaris
 
         // Menampilkan bahan yang stoknya menipis
         $stokMenipis = Stok::where('jumlah_stok', '<=', 10)->get();
@@ -35,5 +38,4 @@ class DashboardController extends Controller
             'stokMenipis',
         ));
     }
-
 }

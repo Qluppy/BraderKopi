@@ -107,7 +107,7 @@
 
                         <!-- Pagination dengan Bootstrap styling -->
                         <div class="row mt-3 ml-auto">
-                            {{ $rekapProduk->appends(['search' => request('search'), 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'per_page' => request('per_page')])->links('pagination::bootstrap-4') }}
+                            {{ $rekapProduk->appends(['search' => request('search'), 'start_date' => request('start_date'), 'end_date' => request('end_date'), 'per_page' => request('per_page')])->links('pagination.custom') }}
                         </div>
                     </div>
                 </div>

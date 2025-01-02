@@ -119,7 +119,7 @@
             
                 <!-- Pagination dengan Bootstrap styling -->
                 <div class="row mt-3 ml-auto">
-                    {{ $stok->appends(['search' => request('search'), 'per_page' => request('per_page')])->links('pagination::bootstrap-4') }}
+                    {{ $stok->appends(['search' => request('search'), 'per_page' => request('per_page')])->links('pagination.custom') }}
                 </div>
             </div>
             

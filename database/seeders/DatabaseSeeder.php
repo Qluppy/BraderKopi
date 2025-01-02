@@ -19,7 +19,21 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
-           // Memanggil seeder tambahan
-           $this->call(UsersTableSeeder::class);
+        // Memanggil seeder tambahan
+        $this->call(UsersTableSeeder::class);
+
+        // Seeder untuk master_bahan
+        $this->call(MasterBahanSeeder::class);
+
+        // Seeder untuk produk
+        $this->call(ProdukSeeder::class);
+
+        // Seeder untuk produk_bahan
+        $this->call(ProdukBahanSeeder::class);
+
+        // Seeder untuk stok (stok baru membutuhkan bahan yang ada di master_bahan)
+        $this->call(StokSeeder::class);
+
+        $this->call(LaporanSeeder::class);
     }
 }
