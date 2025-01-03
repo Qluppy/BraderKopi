@@ -49,7 +49,9 @@ class LaporanController extends Controller
             ->paginate($perPage)
             ->withQueryString(); // Menjaga query string untuk start_date, end_date, dan per_page
 
+        // Hitung total penjualan sesuai rentang waktu yang dipilih
         $totalPenjualan = DB::table('transaksi')
+            ->whereBetween('tanggal_transaksi', [$startDate, $endDate]) // Tambahkan kondisi whereBetween
             ->sum('total_harga');
 
         return view('laporan.index', compact('rekapProduk', 'totalPenjualan', 'startDate', 'endDate'));

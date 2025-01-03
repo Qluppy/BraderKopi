@@ -29,7 +29,7 @@ class MasterBahanSeeder extends Seeder
             ['nama_bahan' => 'Air jeruk', 'deskripsi_bahan' => 'Air perasan jeruk', 'jenis_bahan' => 'cair', 'satuan' => 'mililiter'],
             ['nama_bahan' => 'Jus blackberry', 'deskripsi_bahan' => 'Jus dari buah blackberry', 'jenis_bahan' => 'cair', 'satuan' => 'mililiter'],
             ['nama_bahan' => 'Air soda', 'deskripsi_bahan' => 'Air dengan karbonasi', 'jenis_bahan' => 'cair', 'satuan' => 'mililiter'],
-            ['nama_bahan' => 'Biji kopi', 'deskripsi_bahan' => 'Kopi yang sudah digiling', 'jenis_bahan' => 'padat', 'satuan' => 'gram'],
+            ['nama_bahan' => 'Biji Kopi', 'deskripsi_bahan' => 'Kopi yang sudah digiling', 'jenis_bahan' => 'padat', 'satuan' => 'gram'],
             ['nama_bahan' => 'Sirup kelapa', 'deskripsi_bahan' => 'Sirup rasa kelapa', 'jenis_bahan' => 'cair', 'satuan' => 'mililiter']
         ];
 

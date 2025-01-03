@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Log;
 
 class SAWController extends Controller
 {
-    public function calculate(Request $request)
+    
+public function calculate(Request $request)
     {
         Log::info('Memulai perhitungan SAW.');
 
@@ -26,29 +27,33 @@ class SAWController extends Controller
         foreach ($transactions as $transaction) {
             foreach ($transaction->detailTransaksi as $detail) {
                 $produk = $detail->produk;
-
+        
                 $namaProduk = $produk->nama_produk ?? "Produk Tidak Diketahui";
                 $hargaProduk = $produk->harga_produk ?? 0;
                 $terjual = $detail->jumlah ?? 0;
-
+        
                 // Mendapatkan jumlah biji kopi dari relasi produk dan bahan
                 $bijiKopi = $produk->produkBahan
                     ->where('masterBahan.nama_bahan', 'Biji Kopi')
                     ->sum('jumlah_bahan') ?? 0;
-
-                // Jika produk sudah ada di grup, akumulasikan data
-                if (isset($groupedAlternatives[$namaProduk])) {
-                    $groupedAlternatives[$namaProduk]['terjual'] += $terjual;
-                } else {
-                    // Tambahkan produk ke grup
-                    $groupedAlternatives[$namaProduk] = [
-                        'harga_produk' => $hargaProduk,
-                        'biji_kopi' => $bijiKopi,
-                        'terjual' => $terjual,
-                    ];
+        
+                // Hanya tambahkan produk yang menggunakan bahan "Biji Kopi"
+                if ($bijiKopi > 0) {
+                    // Jika produk sudah ada di grup, akumulasikan data
+                    if (isset($groupedAlternatives[$namaProduk])) {
+                        $groupedAlternatives[$namaProduk]['terjual'] += $terjual;
+                    } else {
+                        // Tambahkan produk ke grup
+                        $groupedAlternatives[$namaProduk] = [
+                            'harga_produk' => $hargaProduk,
+                            'biji_kopi' => $bijiKopi,
+                            'terjual' => $terjual,
+                        ];
+                    }
                 }
             }
         }
+        
 
         // Konversi hasil grup ke dalam array biasa
         $alternatives = [];
@@ -57,8 +62,8 @@ class SAWController extends Controller
             $alternatives[] = $data;
             $alternativeLabels[] = ['nama_produk' => $namaProduk];
         }
-
-        // Jika tidak ada data alternatif, kembalikan dengan peringatan
+       
+ // Jika tidak ada data alternatif, kembalikan dengan peringatan
         if (empty($alternatives)) {
             Log::warning('Tidak ada data transaksi untuk bulan: ' . $bulan . ', tahun: ' . $tahun);
             return view('result', [
@@ -97,9 +102,7 @@ $lowestScore = [
     'nama_produk' => $alternativeLabels[$closestToOneIndex]['nama_produk'] ?? '-',
     'skor' => $finalScores[$closestToOneIndex] ?? 0,
 ];
-
-
-        return view('result', [
+ return view('result', [
             'alternatives' => $alternatives,
             'alternativeLabels' => $alternativeLabels,
             'normalizedAlternatives' => $normalizedAlternatives,
@@ -142,12 +145,15 @@ $lowestScore = [
             }
         }
 
-        Log::info('Normalisasi selesai.', $normalized);
+      
+
+  Log::info('Normalisasi selesai.', $normalized);
 
         return $normalized;
     }
 
-    private function calculateScores(array $normalizedAlternatives, array $weights)
+  
+ private function calculateScores(array $normalizedAlternatives, array $weights)
     {
         Log::info('Menghitung skor akhir untuk setiap alternatif.');
 
